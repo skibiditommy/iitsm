@@ -171,49 +171,36 @@ The application implements **Option C: Layered Full-Stack Enterprise Architectur
 
 ```mermaid
 flowchart TB
-    subgraph Layer1["Layer 1: Presentation & UI Layer (React 19 + TypeScript + Vite)"]
-        UI_Emp["EmployeePortal.tsx (Voice Dictation, Media Dropzone)"]
-        UI_Tech["TechnicianPortal.tsx (Queue, SLA Timer, Resolution)"]
-        UI_Admin["AdminPortal.tsx (DAG Blast Radius, SLA Editor, Strategy Switcher)"]
-        UI_Chat["Chatbot.tsx (Groq LPU AI Assistant)"]
+    subgraph Layer1["Tier 1: Presentation & UI Layer (React 19 + TypeScript + Vite)"]
+        direction LR
+        UI_Emp["👤 EmployeePortal.tsx<br/>(Voice Dictation & Dropzone)"] ~~~ UI_Tech["🔧 TechnicianPortal.tsx<br/>(Queue & Live SLA Timers)"] ~~~ UI_Admin["🛡️ AdminPortal.tsx<br/>(DAG Blast Radius & SLAs)"] ~~~ UI_Chat["🤖 Chatbot.tsx<br/>(Groq LPU AI Assistant)"]
     end
 
-    subgraph Layer2["Layer 2: API Gateway & Security Layer (Spring Security + JWT)"]
-        Filter["JwtAuthenticationFilter (HMAC-SHA256 Token Validation)"]
-        Controllers["13 REST Controllers (OpenAPI / Swagger 3.0 Documented)"]
-        WS_Broker["WebSocket STOMP Broker (/ws Real-Time Broadcasts)"]
-        GlobalEx["GlobalExceptionHandler (Maps 15 Custom Exceptions to JSON)"]
+    subgraph Layer2["Tier 2: API Gateway & Security Layer (Spring Security + JWT)"]
+        direction LR
+        Filter["🛡️ JwtAuthenticationFilter<br/>(HMAC-SHA256 Token Auth)"] ~~~ Controllers["🌐 13 REST Controllers<br/>(Swagger / OpenAPI 3.0)"] ~~~ WS_Broker["⚡ WebSocket STOMP Broker<br/>(/ws Real-Time Broadcasts)"] ~~~ GlobalEx["⚠️ GlobalExceptionHandler<br/>(15 Custom Exceptions)"]
     end
 
-    subgraph Layer3["Layer 3: Application & Intelligence Services Layer"]
-        AuthSvc["AuthService (BCrypt Cost 12, Account Lockout)"]
-        IncSvc["IncidentService (14-Step Orchestration Pipeline)"]
-        SlaSvc["SlaService & SlaMonitorScheduler (80% Warning & Escalation)"]
-        AnalyticsSvc["AnalyticsService (Topological DAG BFS Blast Radius)"]
-        SearchSvc["SearchService (Jaccard / TF-IDF Vectorizer)"]
+    subgraph Layer3["Tier 3: Application & Intelligence Services Layer"]
+        direction LR
+        AuthSvc["🔐 AuthService<br/>(BCrypt & Account Lockout)"] ~~~ IncSvc["⚙️ IncidentService<br/>(14-Step Orchestration)"] ~~~ SlaSvc["⏱️ SlaMonitorScheduler<br/>(80% Warning & Escalation)"] ~~~ AnalyticsSvc["📊 AnalyticsService<br/>(Topological DAG BFS)"]
     end
 
-    subgraph Layer4["Layer 4: OOP Domain Core & Design Patterns Layer"]
-        DomainEntities["Entities: Incident, User, Employee, Technician, ITService, SlaPolicy"]
-        StatePat["State Pattern: 10 Concrete States (SLA Pausing in PendingUser)"]
-        StratPat["Strategy Pattern: Priority & Assignment Hot-Swappable Engines"]
-        CoRPat["Chain of Responsibility: 4-Tier Hierarchical Escalation"]
-        ObsPat["Observer Pattern: 10 Sealed Domain Events & Decoupled Publishers"]
-        FactPat["Factory Pattern: IncidentFactory, UserFactory, NotificationFactory"]
+    subgraph Layer4["Tier 4: OOP Domain Core & Design Patterns Layer"]
+        direction LR
+        Entities["📦 Domain Entities<br/>(Incident, User, ITService)"] ~~~ StatePat["🔄 State Pattern<br/>(10 Concrete States)"] ~~~ StratPat["🔀 Strategy Pattern<br/>(Priority & Assignment)"] ~~~ CoRPat["⛓️ Chain of Responsibility<br/>(4-Tier Escalation)"]
     end
 
-    subgraph Layer5["Layer 5: Persistence & Infrastructure Adapter Layer"]
-        Repos["12 Spring Data JPA Repositories (AuditLog is Append-Only)"]
-        AI_Adapters["AiAssistantPort (GroqApiAdapter + LocalNlpAdapter)"]
-        Notif_Adapters["NotificationChannelAdapter (InApp, Email, SMS)"]
-        DB[("H2 File-Backed DB / Docker PostgreSQL 16")]
+    subgraph Layer5["Tier 5: Persistence & Infrastructure Adapter Layer"]
+        direction LR
+        Repos["🗄️ 12 JPA Repositories<br/>(Append-Only Audit Log)"] ~~~ Adapters["🔌 External Adapters<br/>(Groq AI, Email, SMS, WS)"] ~~~ DB[("💾 Database Engine<br/>H2 DB / PostgreSQL 16")]
     end
 
-    Layer1 -->|"REST / JSON over HTTP & WebSocket"| Layer2
-    Layer2 --> Layer3
-    Layer3 --> Layer4
-    Layer4 --> Layer5
-    Layer5 --> DB
+    Layer1 ==>|"REST / JSON over HTTPS & WebSockets"| Layer2
+    Layer2 ==> Layer3
+    Layer3 ==> Layer4
+    Layer4 ==> Layer5
+    Layer5 ==> DB
 ```
 
 ## 3.2 End-to-End Request & Event Flow
@@ -255,28 +242,43 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     subgraph Actors["System Actors"]
+        direction TB
         EMP["👤 Employee / Customer"]
         TECH["🔧 Support Technician"]
         ADMIN["🛡️ Administrator / IT Manager"]
         SYS["⏰ System Schedulers"]
     end
 
-    subgraph UseCases["I-ITSM Capabilities Boundary"]
-        UC1["Self-Register & Credential Login"]
-        UC2["Report Incident (Voice, Form, Media)"]
-        UC3["AI Chatbot Assistance & Triage"]
-        UC4["Verify Resolution & Rate CSAT (1-5)"]
-        UC5["Acknowledge & Investigate Incident"]
-        UC6["Request Clarification (Pause SLA Clock)"]
-        UC7["Resolve Incident with Root Cause"]
+    subgraph UserTechOps["Operational Capabilities (Intake & Resolution)"]
+        direction TB
+        subgraph SelfService["Self-Service & Intake"]
+            direction TB
+            UC1["Self-Register & Credential Login"]
+            UC2["Report Incident (Voice, Form, Media)"]
+            UC3["AI Chatbot Assistance & Triage"]
+            UC4["Verify Resolution & Rate CSAT (1-5)"]
+        end
+        subgraph Operations["Investigation & SLAs"]
+            direction TB
+            UC5["Acknowledge & Investigate Incident"]
+            UC6["Request Clarification (Pause SLA Clock)"]
+            UC7["Resolve Incident with Root Cause"]
+            UC13["Continuous 60s SLA Scan & 80% Warning"]
+            UC14["Execute 4-Tier Escalation (CoR)"]
+        end
+        SelfService ~~~ Operations
+    end
+
+    subgraph Governance["Governance & Administration"]
+        direction TB
         UC8["Configure IT Services & Dependencies"]
         UC9["Runtime Strategy Hot-Swapping"]
-        UC10["Manage Technician Fleet & Availability"]
+        UC10["Manage Technician Fleet & Workloads"]
         UC11["Assign Custom SLA Deadlines"]
         UC12["Inspect Immutable Audit Trail"]
-        UC13["Continuous 60s SLA Scan & 80% Warning"]
-        UC14["Execute 4-Tier Escalation (CoR)"]
     end
+
+    UserTechOps ~~~ Governance
 
     EMP --> UC1
     EMP --> UC2
@@ -310,10 +312,7 @@ classDiagram
         #Long id
         #String email
         #String passwordHash
-        #String firstName
-        #String lastName
         #Role role
-        #boolean active
         #int failedLoginAttempts
         #LocalDateTime lockoutExpiry
         +verifyPassword(plainText) boolean
@@ -337,7 +336,6 @@ classDiagram
         +incrementWorkload() void
         +decrementWorkload() void
         +hasSkill(category) boolean
-        +getDashboardPermissions() Set~Permission~
     }
 
     class Administrator {
@@ -346,43 +344,34 @@ classDiagram
         +canTransitionTo(Status) boolean
     }
 
-    User <|-- Employee : Inheritance (is-a)
-    User <|-- Technician : Inheritance (is-a)
-    User <|-- Administrator : Inheritance (is-a)
+    User <|-- Employee : Inheritance
+    User <|-- Technician : Inheritance
+    User <|-- Administrator : Inheritance
 
     class Incident {
         <<aggregate root>>
         -String incidentId
         -String title
-        -String description
         -Status status
         -Priority priority
         -PriorityScore priorityScore
         -SlaDeadline slaDeadline
-        -String attachmentData
         -String rootCause
         -int satisfactionRating
-        -int reopenCount
         +classify(category, service) void
         +assignTechnician(tech) void
         +acknowledge(tech) void
         +startInvestigation() void
         +requestInfo(question) void
-        +resumeWork(answer) void
         +resolve(rootCause, fix) void
         +verify(feedback, rating) void
-        +close() void
-        +escalate() void
     }
 
     class ITService {
         -String name
         -int businessCriticality
         -ServiceStatus status
-        -Set~ITService~ upstreamDependencies
-        -Set~ITService~ downstreamDependencies
         +getBlastRadius() Set~ITService~
-        +getImpactPaths() List~List~ITService~~
     }
 
     class IncidentState {
@@ -391,14 +380,14 @@ classDiagram
         +canTransitionTo(target) boolean
     }
 
-    class PriorityCalculationStrategy {
+    class PriorityStrategy {
         <<interface>>
-        +calculatePriority(impact, urgency, service, userCount) PriorityScore
+        +calculatePriority(impact, urgency) PriorityScore
     }
 
-    class TechnicianAssignmentStrategy {
+    class AssignmentStrategy {
         <<interface>>
-        +selectTechnician(category, availableTechs, incident) Optional~Technician~
+        +selectTechnician(category, techs) Optional~Technician~
     }
 
     class EscalationHandler {
@@ -407,19 +396,20 @@ classDiagram
         +setNext(handler) EscalationHandler
     }
 
-    class IncidentEventPublisher {
-        -List~IncidentEventObserver~ observers
-        +subscribe(observer) void
+    class EventPublisher {
+        -List~Observer~ observers
         +publish(event) void
     }
 
-    Incident *-- PriorityScore : Composition (owns)
-    Incident *-- SlaDeadline : Composition (owns)
-    Incident o-- ITService : Aggregation (references)
-    Incident o-- Technician : Association (assigned to)
-    Incident o-- Employee : Association (reported by)
-    Incident ..> IncidentState : Governed by State Pattern
-    ITService o-- ITService : DAG Dependency Graph
+    User <-- Incident : reporter / technician
+    Incident o-- ITService : Aggregation (impacts)
+    Incident *-- IncidentState : Governed by State Pattern
+    Incident ..> PriorityStrategy : Evaluates Priority
+    Incident ..> AssignmentStrategy : Allocates Tech
+
+    IncidentState <-- EscalationHandler : routes
+    EscalationHandler <-- EventPublisher : dispatches
+
     IncidentState <|.. NewState : Implements
     IncidentState <|.. InProgressState : Implements
     IncidentState <|.. PendingUserState : Implements
@@ -431,6 +421,7 @@ classDiagram
 
 ```mermaid
 stateDiagram-v2
+    direction TB
     [*] --> NEW : reportIncident()
 
     NEW --> CLASSIFIED : classify()
@@ -446,13 +437,9 @@ stateDiagram-v2
     RESOLVED --> IN_PROGRESS : rejectResolution() / reopen() [reopenCount +1]
     VERIFIED --> CLOSED : close() [Archived Terminal State]
 
-    NEW --> ESCALATED : SLA breach / manual
-    CLASSIFIED --> ESCALATED : SLA breach / manual
-    ASSIGNED --> ESCALATED : SLA breach / manual
-    ACKNOWLEDGED --> ESCALATED : SLA breach / manual
-    IN_PROGRESS --> ESCALATED : SLA breach / manual
-    PENDING_USER --> ESCALATED : SLA breach / manual
-    ESCALATED --> ASSIGNED : reassign(tech)
+    ASSIGNED --> ESCALATED : Response SLA Breach
+    IN_PROGRESS --> ESCALATED : Resolution SLA Breach
+    ESCALATED --> ASSIGNED : reassignTechnician()
 ```
 
 ## 4.4 Mapping of the 9 Required OOP Concepts & 6 Design Patterns
@@ -535,6 +522,7 @@ All domain exceptions derive from the abstract base class `IitsmException`, whic
 
 ```mermaid
 classDiagram
+    direction TB
     class RuntimeException
     class IitsmException {
         <<abstract>>
@@ -542,36 +530,47 @@ classDiagram
         -HttpStatus status
         -Map details
     }
-    class InvalidLoginException { 401 UNAUTHORIZED }
-    class UnauthorizedOperationException { 403 FORBIDDEN }
-    class InvalidIncidentException { 400 BAD_REQUEST }
-    class InvalidStateTransitionException { 400 BAD_REQUEST }
-    class DuplicateIncidentException { 409 CONFLICT }
-    class TechnicianWorkloadExceededException { 409 CONFLICT }
-    class TechnicianUnavailableException { 409 CONFLICT }
-    class ServiceNotFoundException { 404 NOT_FOUND }
-    class CategoryNotFoundException { 404 NOT_FOUND }
-    class UserNotFoundException { 404 NOT_FOUND }
-    class IncidentNotFoundException { 404 NOT_FOUND }
-    class MissingSlaConfigurationException { 500 INTERNAL_ERROR }
-    class DatabaseOperationException { 500 INTERNAL_ERROR }
-    class ExternalServiceFailureException { 502 BAD_GATEWAY }
+
+    class AuthenticationExceptions {
+        <<401 / 403>>
+        InvalidLoginException (401)
+        UnauthorizedOperationException (403)
+    }
+
+    class ValidationExceptions {
+        <<400 / 409>>
+        InvalidIncidentException (400)
+        InvalidStateTransitionException (400)
+        DuplicateIncidentException (409)
+    }
+
+    class ResourceNotFoundExceptions {
+        <<404 Not Found>>
+        IncidentNotFoundException (404)
+        UserNotFoundException (404)
+        ServiceNotFoundException (404)
+        CategoryNotFoundException (404)
+    }
+
+    class CapacityExceptions {
+        <<409 Conflict>>
+        TechnicianWorkloadExceededException (409)
+        TechnicianUnavailableException (409)
+    }
+
+    class SystemFailureExceptions {
+        <<500 / 502>>
+        MissingSlaConfigurationException (500)
+        DatabaseOperationException (500)
+        ExternalServiceFailureException (502)
+    }
 
     RuntimeException <|-- IitsmException
-    IitsmException <|-- InvalidLoginException
-    IitsmException <|-- UnauthorizedOperationException
-    IitsmException <|-- InvalidIncidentException
-    IitsmException <|-- InvalidStateTransitionException
-    IitsmException <|-- DuplicateIncidentException
-    IitsmException <|-- TechnicianWorkloadExceededException
-    IitsmException <|-- TechnicianUnavailableException
-    IitsmException <|-- ServiceNotFoundException
-    IitsmException <|-- CategoryNotFoundException
-    IitsmException <|-- UserNotFoundException
-    IitsmException <|-- IncidentNotFoundException
-    IitsmException <|-- MissingSlaConfigurationException
-    IitsmException <|-- DatabaseOperationException
-    IitsmException <|-- ExternalServiceFailureException
+    IitsmException <|-- AuthenticationExceptions
+    IitsmException <|-- ValidationExceptions
+    IitsmException <|-- ResourceNotFoundExceptions
+    IitsmException <|-- CapacityExceptions
+    IitsmException <|-- SystemFailureExceptions
 ```
 
 ## 6.2 OOP Domain Layer (`com.iitsm.domain.*`)
