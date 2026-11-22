@@ -1,0 +1,40 @@
+server:
+  port: 8080
+
+spring:
+  sql:
+    init:
+      mode: always
+  datasource:
+    url: jdbc:h2:file:./iitsm-data;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+jwt:
+  secret: iitsm-secret-key-for-jwt-token-generation-min-256-bits-long-enough
+  expiration: 86400000
+
+groq:
+  api:
+    key: ${GROQ_API_KEY:your_groq_api_key_here}
+    url: https://api.groq.com/openai/v1/chat/completions
+    model: openai/gpt-oss-120b
+
+cors:
+  allowed-origins: http://localhost:5173
+
+logging:
+  level:
+    com.iitsm: DEBUG

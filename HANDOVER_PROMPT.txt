@@ -1,0 +1,165 @@
+# ==============================================================================
+# I-ITSM: INTELLIGENT IT SERVICE MANAGEMENT & INCIDENT RESOLUTION SYSTEM
+# LLM HANDOVER & TECHNICAL SPECIFICATION PROMPT
+# Course: CS F213 / MAC F212 (Object-Oriented Programming Capstone Project)
+# ==============================================================================
+
+You are working on the I-ITSM (Intelligent IT Service Management & Incident Resolution System) codebase. This document outlines the complete architectural state, domain model, design patterns, new innovative features, database schema, and verification instructions so you can continue development or evaluation seamlessly.
+
+---
+
+## 1. PROJECT METADATA & STACK
+- **Language / Runtime:** Java 21 (JDK 21), TypeScript (ES2022) / Node 18+
+- **Backend Framework:** Spring Boot 3.2.5 (Spring Security, Spring Data JPA, Spring WebSocket STOMP)
+- **Frontend Framework:** React 18, Vite 6, Tailwind CSS 4, Recharts, Lucide React
+- **Database:** H2 Embedded (file-backed `./iitsm-data.mv.db`), PostgreSQL 16 ready (Docker Compose profile)
+- **Authentication:** Stateless JWT (HMAC-SHA256, JJWT 0.12.6), BCrypt password hashing
+- **Testing:** JUnit 5, AssertJ, Spring Boot Test — 30 comprehensive unit & integration tests (100% passing)
+
+---
+
+## 2. CORE ARCHITECTURE & OOP DESIGN PATTERNS
+
+The application is built strictly following Clean Architecture and Domain-Driven Design (DDD):
+
+### A. 4 OOP Pillars Demonstrated
+1. **Encapsulation:** Entities (`Incident`, `Technician`, `User`, `ITService`) protect internal invariants. State changes occur strictly via transition methods (`classify()`, `assignTechnician()`, `investigate()`, `resolve()`, `escalate()`, `setCustomDeadline()`). No anemic setters.
+2. **Inheritance:** Single-Table JPA Inheritance on `User` (`@Inheritance(strategy = SINGLE_TABLE)`) with concrete subclasses `Employee`, `Technician`, and `Administrator`. Polymorphic exception hierarchy rooted at `IitsmException` with 15 specialized domain subclasses.
+3. **Polymorphism:** Dynamic strategy dispatch (`PriorityCalculationStrategy`, `TechnicianAssignmentStrategy`), state machine transitions (`IncidentState.transition()`), and decoupled event distribution (`IncidentEventObserver`).
+4. **Abstraction:** Clean interfaces for AI services (`AiAssistantPort`), notifications (`NotificationChannelAdapter`), and business rules (`IncidentState`, `PriorityCalculationStrategy`).
+
+### B. 6 Gang-of-Four (GoF) Design Patterns Implemented
+1. **State Pattern (`com.iitsm.domain.state`):**
+   - 9 distinct incident lifecycle states: `NEW`, `CLASSIFIED`, `ASSIGNED`, `ACKNOWLEDGED`, `IN_PROGRESS`, `RESOLVED`, `VERIFIED`, `CLOSED`, `ESCALATED`.
+   - Transitions enforced by `IncidentState` implementations. Invalid transitions throw `InvalidStateTransitionException`.
+2. **Strategy Pattern (`com.iitsm.domain.strategy`):**
+   - Priority Calculation: `WeightedScoringPriorityStrategy`, `MatrixRuleBasedPriorityStrategy`.
+   - Assignment Optimization: `SkillBasedAssignmentStrategy`, `LoadBasedAssignmentStrategy`, `RoundRobinAssignmentStrategy`, `SmartCompositeRecommendationStrategy`.
+   - Strategies can be hot-swapped at runtime via `StrategyConfigService` without restarting the server.
+3. **Observer Pattern (`com.iitsm.domain.observer`):**
+   - 10 sealed domain events (`IncidentCreatedEvent`, `IncidentEscalatedEvent`, `SlaViolatedEvent`, etc.) published via `IncidentEventPublisher`.
+   - Decoupled observers: `AuditTrailObserver` (records audit logs), `NotificationObserver` (dispatches in-app, email, and SMS notifications).
+4. **Factory Pattern (`com.iitsm.domain.factory`):**
+   - `IncidentFactory`: Generates database sequence-backed ticket numbers (`INC-1001+`), computes priority scores, calculates SLA deadlines, and validates constraints.
+   - `UserFactory` & `NotificationFactory`.
+5. **Adapter Pattern (`com.iitsm.infrastructure.adapter`):**
+   - AI Port: `LocalNlpAdapter` (rule-based NLP, TF-IDF / Jaccard similarity) with optional fallback to `GeminiApiAdapter`.
+   - Multi-Channel Notifications: `InAppWebSocketAdapter`, `EmailNotificationAdapter`, `SmsNotificationAdapter`.
+6. **Repository Pattern (`com.iitsm.repository`):**
+   - 12 Spring Data JPA repositories with JPQL queries for graph traversal, active breaches, and technician workloads.
+
+---
+
+## 3. NEW & INNOVATIVE FEATURES (RECENTLY ADDED & VERIFIED)
+
+1. **Voice-Based Incident Dictation (Speech-to-Text):**
+   - Located in `EmployeeDashboard.tsx` via Web Speech API (`webkitSpeechRecognition`).
+   - Employees click "Dictate Description" to speak symptoms. Transcribed text streams live into the description area. Typing remains supported if microphone permissions are denied.
+2. **Rich Media Evidence Attachments (Pictures & Videos):**
+   - Supports screenshot photos (`image/*`) and screen recordings (`video/*`) up to 25MB.
+   - Files are converted to Base64 data URLs and stored in `Incident.attachmentData`.
+   - Dedicated viewer in `IncidentDetail.tsx` renders high-res image previews or native HTML5 video playback with download capabilities.
+3. **Service Dependency Explorer:**
+   - Visualized in `AdminDashboard.tsx` (`Services & Root Causes` tab) powered by `GET /api/analytics/service-impacts`.
+   - Allows tracing cascading impact paths (e.g., `Auth Service` ➔ `Email Service` ➔ `CRM Application`).
+   - Links directly to affected active tickets (e.g. `INC-1006`).
+4. **Automated Root-Cause Suggestions (Possible Shared Causes):**
+   - Powered by `GET /api/analytics/root-cause-suggestions` in `AnalyticsService.java`.
+   - Graph BFS algorithm ranks upstream services by how many downstream services currently suffer active incidents.
+   - `Auth Service` ranks #1 with 4 downstream dependencies affected, providing a 99% confidence recommendation.
+5. **Admin Custom Deadline Management:**
+   - Administrators can assign custom SLA deadlines to technicians on any ticket (`PUT /api/incidents/{id}/deadline`).
+   - Includes quick presets (`+2h`, `+4h`, `+24h`, `+48h`), datetime picker, and audit note tracking.
+   - Displayed prominently in `IncidentDetail.tsx` and `TechnicianDashboard.tsx`.
+6. **Forgot Password Flow & Verification Email:**
+   - Implemented via `POST /api/auth/forgot-password` and `POST /api/auth/reset-password`.
+   - Generates an 8-character cryptographic token, logs to simulated email outbox, and verifies token before updating BCrypt-hashed password.
+7. **Multi-Channel Notification Center:**
+   - In-app notification bell with unread badge counter in `Navbar.tsx`.
+   - Fetches recent notifications from `NotificationOutbox` (`/api/notifications`), categorizing channels (`IN_APP`, `EMAIL`, `SMS`).
+   - Prominent confirmation alerts dispatched upon ticket submission.
+8. **Ticket Number Sequence Collision Resolution:**
+   - Added `incident_display_number` database sequence in `schema.sql` and collision guard loop in `IncidentFactory.java`.
+   - Ensures newly submitted tickets start cleanly at `INC-1016+` without colliding with seeded demo data (`INC-1001` through `INC-1015`).
+
+---
+
+## 4. CREDENTIALS & DEMO USERS
+
+All demo users use the default password: **`Password@123`**
+
+| Role | Email | Purpose |
+|------|-------|---------|
+| **Employee** | `employee@iitsm.org` | Report tickets, voice dictation, media upload, verification & rating |
+| **Technician** | `tech.alex@iitsm.org` | Workload queue, acknowledge, start investigation, resolve tickets |
+| **Admin** | `admin@iitsm.org` | Root-cause analysis, dependency explorer, custom deadlines, strategy switching, time travel demo |
+
+The login page includes 1-click quick login buttons for all 3 demo roles.
+
+---
+
+## 5. REPRODUCTION & EXECUTION COMMANDS
+
+### Backend Execution (Port 8080):
+```bash
+cd backend
+# Run all 30 tests:
+mvn clean test
+
+# Run application:
+mvn spring-boot:run
+```
+
+### Frontend Execution (Port 5173):
+```bash
+cd frontend
+# Install dependencies:
+npm install
+
+# Build production bundle:
+npm run build
+
+# Start Vite dev server:
+npm run dev
+```
+
+---
+
+## 6. PROJECT DIRECTORY MAP
+```
+iitsm/
+├── backend/
+│   ├── pom.xml                               # Dependencies (Java 21, Spring Boot 3.2.5)
+│   ├── src/main/resources/
+│   │   ├── application.yml                   # H2 database & server config
+│   │   └── schema.sql                        # Sequence definition (incident_display_number)
+│   ├── src/main/java/com/iitsm/
+│   │   ├── config/                           # Security, JWT, WebSocket, StrategyConfig
+│   │   ├── controller/                       # Auth, Incident, Analytics, Demo, Notification
+│   │   ├── domain/
+│   │   │   ├── enums/                        # Status, Priority, EscalationLevel, Role
+│   │   │   ├── exception/                    # Custom exception hierarchy
+│   │   │   ├── factory/                      # IncidentFactory, UserFactory, NotificationFactory
+│   │   │   ├── model/                        # Incident, User, Technician, ITService, AuditLog
+│   │   │   ├── observer/                     # Events, Publisher, Observers
+│   │   │   ├── state/                        # State pattern implementation
+│   │   │   └── strategy/                     # Priority & Assignment strategies
+│   │   ├── dto/                              # Request & Response records
+│   │   ├── infrastructure/adapter/           # AI and Notification adapters
+│   │   ├── repository/                       # Spring Data JPA repositories
+│   │   ├── scheduler/                        # SlaMonitorScheduler, EscalationScheduler
+│   │   ├── seed/                             # DataSeeder (idempotent demo seed data)
+│   │   └── service/                          # AuthService, IncidentService, AnalyticsService
+│   └── src/test/java/com/iitsm/              # 30 JUnit 5 test cases
+├── frontend/
+│   ├── src/
+│   │   ├── components/Navbar.tsx             # Notification bell, profile badge
+│   │   ├── components/Chatbot.tsx            # AI support chatbot
+│   │   ├── pages/LoginPage.tsx               # Quick login & forgot password flow
+│   │   ├── pages/EmployeeDashboard.tsx       # Dictation, media upload, incident reporting
+│   │   ├── pages/TechnicianDashboard.tsx     # Queue, deadlines, evidence badges
+│   │   ├── pages/AdminDashboard.tsx          # Dependency explorer, root causes, strategies
+│   │   └── pages/IncidentDetail.tsx          # Evidence viewer, custom deadline management
+├── docs/                                     # Comprehensive academic reports (01 to 06)
+└── README.md                                 # Full documentation & walkthrough guide
+```

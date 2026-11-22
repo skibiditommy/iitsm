@@ -1,0 +1,8 @@
+package com.iitsm.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+
+public record ChatbotMessageRequest(
+        @NotBlank(message = "Message is required") String message,
+        String sessionId
+) {}
